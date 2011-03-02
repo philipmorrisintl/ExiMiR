@@ -1,0 +1,6 @@
+import(affy)
+export("ReadExi") 
+export("NormiR")
+export("make.gal.env")
+export("norm.miR")
+export("summarize.miR")
