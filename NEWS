@@ -1,0 +1,3 @@
+1.3.1  Sylvain Gubian  <DL.RSupport@pmi.com>
+        * NEWS: add NEWS file for tracking changes.
+        * inst/doc/ExiMiR-vignette.Rnw: Fix vignette generation issue

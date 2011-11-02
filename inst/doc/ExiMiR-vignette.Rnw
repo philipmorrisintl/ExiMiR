@@ -394,28 +394,6 @@ extrapolation method.
 \emph{ExiMiR} provides datasets that allows one to test the functions described in this vignette. The test data are in the \verb+R+ objects obtained as 
 described in Section \ref{sec:data}. They can be used as follows,  which reproduces the commands explained in Section \ref{sec:norm}.
 
-\subsection{Affymetrix}
-Start by loading the \emph{ExiMiR} package, the CDF environment and the AffyBatch objects corresponding to the data described in Section \ref{subsec:affydata}:
-<<>>=
-library(ExiMiR)
-data(cdfenv)
-data(GSE19183)
-@
-Apply the RMA quantile normalization on the AffyBatch object \verb+GSE19183+ to create the ExpressionSet object \verb+eset.rma+ containing the normalized data:
-<<>>=
-eset.rma <- rma(GSE19183)
-@
-The spike-in probe-based normalization implemented in \emph{ExiMiR} can be applied similarly:
-<<>>=
-eset.spike <- NormiR(GSE19183, figures.show=FALSE)
-@
-As explained at the end of Section \ref{subsec:affynorm}, the spike-in probe-based normalization method implemented in \verb+NormiR+ can not be applied with its default settings.
-Use the \verb+figures.show=TRUE+ option to diagnose graphically the problem (see Section \ref{subsec:figs}). The safeguarding strategies are described in Section \ref{subsec:problems}
-and the \verb+NormiR+ options described in Section \ref{subsec:opt}. Here \verb+NormiR+ cannot be 
-satisfactorily applied to \verb+GSE19183+ because the spike-in probe intensities do not appropriately cover the intensity range of all the array probes.
-
-
-\subsection{Exiqon}
 Load the \emph{ExiMiR} package, the GAL environment and the AffyBatch objects corresponding to the data described in Section \ref{subsec:exidata}:
 <<>>=
 library(ExiMiR)
