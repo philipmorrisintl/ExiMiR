@@ -6,9 +6,9 @@
 \usepackage{hyperref}
 \usepackage{Sweave}
 \usepackage{subfigure}
+\usepackage{textcomp}
 \DeclareGraphicsExtensions{.png}
 \graphicspath{{images}}
-
 
 \textwidth=6.2in
 \textheight=8.5in
@@ -21,7 +21,7 @@
 \renewcommand{\thefootnote}{\alph{footnote}}
 
 \begin{document}
-\title{Description of ExiMiR}
+\title{Description of \emph{ExiMiR}}
 \author{Sylvain Gubian, Alain Sewer, PMP SA}
 
 \maketitle
@@ -30,9 +30,10 @@
 \section{Introduction}
 
 The \emph{ExiMiR} package provides tools for normalizing miRNA expression data obtained
-from Exiqon miRCURY LNA\texttrademark\ arrays. It gives the possibility of applying a
+primarily from Exiqon miRCURY LNA\texttrademark\ arrays (though other formats are supported
+as well). It gives the possibility of applying a
 novel miRNA-specific normalization method using spike-in probes and is based on
-controlled assumptions \cite{bibi}. These featurse allow to take into account the
+controlled assumptions \cite{bibi}. These features allow to take into account the
 differences between miRNA and gene (mRNA) expression data, as discussed in a recent
 study \cite{sarkar}. \\
 
@@ -40,87 +41,125 @@ study \cite{sarkar}. \\
 common reference. In such cases the spike-in probe-based normalization method allows to
 treat the raw data as if they were coming from single-channel arrays, like
 Affymetrix\textsuperscript{\textregistered} Genechip\textsuperscript{\textregistered}.
-This is why the classes and functions in \emph{ExiMiR} have been designed to
-closely resemble those of the "single-color" \emph{affy} package, while remaining
-compatible with those of the "two-color" \emph{limma} package. \\
+This is why the objects and functions in \emph{ExiMiR} have been chosen to
+closely resemble those of the ''single-color`` \emph{affy} package, while remaining
+compatible with those of the ''two-color`` \emph{limma} package, as shown on
+Figure \ref{fig0}.\\
+
+The latest versions of \emph{ExiMiR} explicitly integrate the raw data objects
+from the \emph{limma} package. Thus the spike-in probe-based normalization method
+can be applied to raw data formats other than Exiqon or Affymetrix, as long as
+suitable ''spike-in probes`` are provided.\\
+
+\begin{figure}[t]
+\begin{center}
+\fbox{\includegraphics{fig0}}
+\caption{Overview of the functions of the ExiMiR package (in blue).}
+\label{fig0}
+\end{center}
+\end{figure}
 
 Further features of \emph{ExiMiR} include:
 \begin{itemize}
 \item
 reading raw data in the ImaGene\textsuperscript{\textregistered} TXT format
-provided by Exiqon;
+used for the Exiqon miRCURY LNA\texttrademark\ arrays;
 \item
 allowing to update the array probe annotations to the latest
-\href{http://www.mirbase.org}{miRbase} releases incorporated in the Exiqon GAL files.
+\href{http://www.mirbase.org}{miRBase} releases incorporated in the Exiqon GAL files;
+\item
+enabling a background correction adapted to the raw data format by wrapping the
+\emph{limma} function \verb+backgroundCorrect+;
+\item
+entering a user-defined set of appropriate probe IDs that can be used by the normalization
+method instead of the automatically selected spike-in probes;
+\item
+enabling to generate the same objects for summarized miRNA expression data after
+having applied the alternative normalization methods contained in both \emph{affy} and
+\emph{limma} packages. 
+
 \end{itemize}
 
-This vignette also shows how to process raw expression data obtained from the
+This vignette shows how to process raw expression data obtained from the
 Affymetrix\textsuperscript{\textregistered} Genechip\textsuperscript{\textregistered}
-miRNA array (CEL and CDF files), in order to illustrate the similarities between
-\emph{ExiMiR} and \emph{affy}.  
-
+miRNA array (CEL and CDF files) in order to illustrate the similarities between
+\emph{ExiMiR} and \emph{affy}. An example with other raw data formats supported by
+\emph{limma} is also discussed.
 
 
 \section{Raw and annotation data}
 \label{sec:data}
 
 This section describes how to find raw and annotation data on which \emph{ExiMiR} can
-be applied.\footnote{N.B.: R objects correponding to the raw and annotation data described in this section
-are provided by the \emph{ExiMiR} package, see Section \ref{sec:example}} It covers both Affymetrix (CEL and CDF) and Exiqon/ImaGene (TXT and GAL)
-cases. If you have your own expression data in CEL or TXT formats, then you just need
-to complete them with the annotation files in CDF or GAL formats, respectively, as
-described below. Do no forget the appropriate \verb+samplelist.txt+ file for the Exiqon
-case.
+be applied.
+\nolinebreak
+\footnote{N.B.: \texttt{R} objects corresponding to the raw and annotation data
+described in this section are provided by the \emph{ExiMiR} package, see Section
+\ref{sec:example}}
+It covers both Affymetrix (CEL and CDF) and Exiqon/ImaGene (TXT and
+GAL) cases. If you have your own expression data in CEL or TXT formats, then you just
+need to complete them with the annotation files in CDF or GAL formats, respectively,
+as described below. Do no forget the appropriate \verb+samplesinfo.txt+ file for the
+Exiqon case. In case your raw data are neither in Affymetrix CEL nor in Exiqon/ImaGene
+TXT formats, then first read Subsection \ref{subsec:othernorm} to see whether
+\emph{ExiMiR} can be applied.
+
 
 \subsection{Affymetrix}
 \label{subsec:affydata}
-First create a directory \verb+Affymetrix+ in your file system. The
-\href{http://www.ncbi.nlm.nih.gov/geo/}{GEO repository} contains several datasets using
-the Affymetrix miRNA array. We choose the series
+First create a directory \verb+Affymetrix+ in your file system. The GEO repository
+\linebreak(\href{http://www.ncbi.nlm.nih.gov/geo/}{http://www.ncbi.nlm.nih.gov/geo/}) contains several datasets using
+the Affymetrix \mbox{miRNA-1\_0} array. We choose the series
 \href{http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19183}{GSE19183} for which
 the raw data file \verb+GSE19183_RAW.tar+ can be downloaded from this
-\href{http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?mode=raw&acc=GSE19183&db=GSE19183%5FRAW%2Etar&is_ftp=true}{URL}.
-Extract the CEL files into the \verb+Affymetrix+ directory. Then get the annotation
-library \verb+miRNA_libraryfile.zip+ from the Affymetrix website at this
-\href{http://www.affymetrix.com/support/downloads/library_files/miRNA_libraryfile.zip}{
-URL}. Extract the file \verb+miRNA-1_0.CDF+ from the directory
-\verb+/CD_miRNA-1_0_v3/Full/miRNA-1_0/LibFiles/+ into the \verb+Affymetrix+ directory
-as well.
+\href{http://www.ncbi.nlm.nih.gov/geosuppl/?acc=GSE19183}{URL}.
+Extract the CEL files into the \verb+Affymetrix+ directory. As long as \verb+R+ can
+connect to the Bioconductor server (\href{http://www.bioconductor.org/}{http://www.bioconductor.org/}), the annotation
+will be generated automatically by the \emph{affy} package when reading the CEL files
+(see Subsection \ref{subsec:affynorm}). If this is not the case, you need to get and
+load the package
+\href{http://bioconductor.org/packages/2.11/data/annotation/html/mirna10cdf.html}
+{\emph{mirna10cdf}}, which will create the appropriate annotation environment for
+the dataset GSE19183 in your \verb+R+ session.
 
 
 \subsection{Exiqon} 
 \label{subsec:exidata}
 
-
 First create a directory \verb+Exiqon+ in your file system. The GEO series
 \href{http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE20122}{GSE20122} contains a
 suitable raw data file \verb+GSE20122_RAW.tar+ at the following
-\href{http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?mode=raw&acc=GSE20122&db=GSE20122%5FRAW%2Etar&is_ftp=true}{URL}.
-After downloading it, extract the enclosed raw data file in ImaGene TXT format into the
-\verb+Exiqon+ directory. Then download the corresponding annotation GAL file from the
-following
+\href{http://www.ncbi.nlm.nih.gov/geosuppl/?acc=GSE20122}{URL}.
+After downloading it, extract and expand (\verb+gunzip+) the enclosed raw data file in
+ImaGene TXT format into the \verb+Exiqon+ directory. Then download the corresponding
+annotation GAL file from the following
 \href{http://shop.exiqon.com/annotations/download/gal_208200-A,208201-A,208202-A_lot31022-31022_hsa,mmu,rno-and-related-vira_from_mb160,miRPlus.gal}{URL}
 into the \verb+Exiqon+ directory as well. Finally, copy and paste the content of
-Appendix \ref{sec:app} from this vignette into a TAB-separated text file called
+Appendix \ref{sec:app} of this vignette into a TAB-separated text file called
 \verb+samplesinfo.txt+ and also located the \verb+Exiqon+ directory. This file is
-required by \emph{ExiMiR} to match the raw data results from the Hy3 and Hy5
-channels. It contains the names of all the TXT files in the experiment, organized in a
-table with one row for each array and two columns corresponding to the two channels Hy3
-and Hy5. \footnote{For practical purposes only 12 of the 54 Hy3-Hy5 raw data filenname
+required by \emph{ExiMiR} to match the raw data results from the Hy3 and Hy5 channels. 
+\footnote{In the Exiqon common reference experimental design, Hy3 and Hy5 are usually the samples
+and the reference channels, respectively.} 
+It contains the names of all the TXT files in the experiment, organized in a table with
+one row for each array and two columns corresponding to the two channels Hy3 and Hy5.
+\footnote{For practical purposes only 12 of the 54 Hy3-Hy5 raw data filename
 pairs from the GEO series GSE20122 are listed in Appendix \ref{sec:app}. Feel free to
-complete \texttt{samplelist.txt} with the 42 remaining ones if you want to be
-exhaustive!} It is very similar to the file \verb+target.txt+ required by the
-\emph{limma} package and is usually provided by Exiqon together with the raw data TXT
-files. 
+complete \texttt{samplesinfo.txt} with the 42 remaining ones if you want to be
+exhaustive!}
+It is very similar to the file \verb+Targets.txt+ required by the \emph{limma} package
+and is usually provided by Exiqon together with the raw data TXT files. 
 
 
 \section{Raw data normalization}
 \label{sec:norm}
 
 This section describes how to apply \emph{ExiMiR} to normalize raw miRNA
-expression data obtained from the Affymetrix\textsuperscript{\textregistered}
+expression data obtained from the Affymetrix\textsuperscript{\textregistered} miRNA
 Genechip\textsuperscript{\textregistered} or from the Exiqon miRCURY LNA\texttrademark\
-arrays. Notice that although these descriptions are generic, some of the
+arrays. 
+Under specific conditions, this is also possible for other raw data formats
+(see Subsection \ref{subsec:othernorm}). 
+Notice that although these descriptions are generic, some of the
 filenames given in the command-line examples might differ from case to case (e.g. GAL
 filenames). Begin by launching an \verb+R+ session at the same level as the
 \verb+Affymetrix+ and \verb+Exiqon+ directories created in Section \ref{sec:data}. 
@@ -129,34 +168,51 @@ filenames). Begin by launching an \verb+R+ session at the same level as the
 \subsection{Affymetrix: from CEL files to ExpressionSet objects}
 \label{subsec:affynorm}
 
+\emph{You don't need to run the following three commands if your} \verb+R+ \emph{installation can
+connect the Bioconductor server} (\href{http://www.bioconductor.org/}{http://www.bioconductor.org/}).\\
 
-First create the array annotation environment using the CDF file \verb+miRNA-1_0.CDF+
-and the \emph{makecdfenv} package (set previously your working directory to the parent directory of the 'Affymetrix' folder):
-
+The array annotation environment is created by loading the \emph{mirna10cdf} package:
+\begin{Sinput}
+R> library(mirna10cdf)
+\end{Sinput}
+Using the \verb+makecdfenv+ package, the above corresponds to the following
+two commands
 \begin{Sinput}
 R> library(makecdfenv)
-R> cdfenv <- make.cdf.env(cdf.path="Affymetrix", filename='miRNA-1_0.CDF')
+R> cdfenv <- make.cdf.env(cdf.path='Affymetrix', filename='miRNA-1_0.CDF')
 \end{Sinput}
-Then load the CEL file raw data into an AffyBatch object using the \emph{affy}
-package:
+provided that the CDF file \verb+miRNA-1_0.CDF+ (formerly downloadable from the Affymetrix
+website) is located in the \verb+Affymetrix+ folder.\\
 
+Load the CEL file raw data into an AffyBatch object using the \emph{affy}
+package:
+\footnote{
+Drop the argument \texttt{cdf.name='cdfenv'} if the environment \texttt{cdfenv} has not been
+defined previously with \texttt{make.cdf.env}.
+}
 \begin{Sinput}
 R> library(affy)
 R> abatch <- ReadAffy(cdfname='cdfenv', celfile.path='Affymetrix')
 \end{Sinput}
 Raw data normalization is directly applied on \verb+abatch+ to create an
 ExpressionSet object. For instance:
-
+\footnote{This is equivalent to \texttt{eset.rma <- rma(abatch)}.}
 \begin{Sinput}
-R> eset.rma <- rma(abatch)
+R> eset.rma <- expresso(abatch, bgcorrect.method='rma',
+                                normalize.method='quantiles',
+                                pmcorrect.method='pmonly',
+                                summary.method='medianpolish')
 \end{Sinput}
-As an alternative to the \verb+rma+ quantile normalization validated for gene (mRNA)
-expression, the spike-in probe-based approach in \emph{ExiMiR} might give better
-results for miRNA expression data \cite{bibi,sarkar}:   
+As an alternative to the above RMA quantile normalization validated for gene (mRNA)
+expression \cite{RMA}, the spike-in probe-based method implemented in the \emph{ExiMiR} function
+\verb+NormiR+ might give better results for miRNA expression data \cite{bibi,sarkar}:   
 
 \begin{Sinput}
 R> library(ExiMiR)
-R> eset.spike <- NormiR(abatch)
+R> eset.spike <- NormiR(abatch, bgcorrect.method='rma',
+                                normalize.method='spikein',
+                                pmcorrect.method='pmonly',
+                                summary.method='medianpolish')
 \end{Sinput}	
 For the GSE19183 dataset, the assumptions allowing the application of the \verb+NormiR+
 spike-in probe-based normalization are not satisfied and a default median normalization
@@ -169,6 +225,7 @@ description is given in Section \ref{subsec:figs} below.
 \subsection{Exiqon: from TXT files to ExpressionSet objects}
 \label{subsec:exinorm}
 
+
 First load the \emph{ExiMiR} package:
 
 \begin{Sinput}
@@ -177,48 +234,284 @@ R> library(ExiMiR)
 Then create the array annotation environment using the GAL file and the
 \verb+make.gal.env+ function: 
 
-%\small
 \begin{Sinput}
-R> galenv <- make.gal.env(gal.path='Exiqon')
+R>  make.gal.env(galname='galenv', gal.path='Exiqon')
 \end{Sinput}
-%\normalsize
 Read the raw data TXT files into an AffyBatch object using the \verb+ReadExi+ function:
+\footnote{
+\texttt{ReadExi} stores the dual-channel foreground and background intensity data as follows:
+the foreground data matrix of the Hy3 channel (second column of \texttt{samplesinfo.txt})
+and the foreground data matrix of the Hy5 channel (third column of \texttt{samplesinfo.txt})
+are concatenated and stored in the \texttt{exprs} slot of the resulting AffyBatch object.
+The same goes for the background data in the \texttt{se.exprs} slot.\label{footnote:readexi}
+}
 
 \begin{Sinput}
 R> ebatch <- ReadExi(galname='galenv', txtfile.path='Exiqon')
 \end{Sinput}
 Similarly to the Affymetrix case in Subsection \ref{subsec:affynorm}, the raw data
 normalization is applied on \verb+ebatch+ to create an ExpressionSet object. For
-instance the \verb+rma+ quantile normalization from the \emph{affy} package, using the option \verb+background=FALSE+, as recommanded by a recent study\cite{lopez}:
-
+instance the RMA quantile normalization from the \emph{affy} package \cite{RMA}, using the option \verb+bg.correct=FALSE+, as recommended by a recent study\cite{lopez}:
+\footnote{This command is not equivalent to \texttt{eset.rma <- rma(ebatch,background=FALSE)}
+because \texttt{NormiR} applies the quantile normalization separately on the data
+from the Hy3 and Hy5 channels (which have been concatenated in \texttt{ebatch} by
+\texttt{ReadExi}) while \texttt{rma} mixes the data from two channels.\label{footnote:rma}
+}
 \begin{Sinput}
-R> library(affy)
-R> eset.rma <- rma(ebatch, background=FALSE)
+R> eset.rma <- NormiR(ebatch, bg.correct=FALSE,
+                              normalize.method='quantile',
+                              summary.method='medianpolish')
 \end{Sinput}
-However, the assumptions for applying \verb+rma+ are not guaranteed to be satisfied in
+However, the assumptions for applying the quantile normalization are not guaranteed to be satisfied in
 the case of miRNA expression data \cite{bibi, sarkar}. It might be better to use
 the spike-in probe-based method from \emph{ExiMiR}:
 
 \begin{Sinput} 
-R> eset.spike <- NormiR(ebatch)
+R> eset.spike <- NormiR(ebatch, bg.correct=FALSE,
+                                normalize.method='spikein',
+                                summary.method='medianpolish')
 \end{Sinput}
-If all the assumptions underlying \verb+NormiR+ are satisfied, a series of control
-figures are generated, that will be explained in Subsection \ref{subsec:figs} below. If
-one or more assumptions are not met, then the median normalization is applied instead
-of the spike-in probe-based method. However, \emph{ExiMiR} offers several options
-to deal with such situations, as explained in Section \ref{sec:trouble}
-below. 
+If all the assumptions underlying the application of the \verb+NormiR+ spike-in probe-based
+normalization are satisfied, a series of control figures are generated, which will be
+explained in Subsection \ref{subsec:figs}. If one or more assumptions are not met,
+then the median normalization is applied instead. However, \emph{ExiMiR} offers several
+options to deal with such situations and still allow the application of the spike-in
+probe-based method, as explained in Subsections \ref{subsec:problems} and
+\ref{subsec:opt}. 
 
 
-\subsection{Control figures for the spike-in probe-based normalization}
+\subsection{Other formats: reading with \emph{limma} and normalizing with \emph{ExiMiR}} 
+\label{subsec:othernorm}
+
+The approach consists in reading the raw data using the \emph{limma} package and then
+transforming the result into an AffyBatch object using the function \verb+creatAB+, as
+illustrated on Figure \ref{fig0}. Therefore the
+conditions for applying \emph{ExiMiR} on other raw data forms are 
+(1) the ability to load the raw data into \emph{limma} objects (EList or RGList), and 
+(2) the availability of probe sets that can be used as ''spike-in probes`` during
+normalization. The parameter \verb+probeset.list+ of the function \verb+NormiR+ allows to
+select the IDs of such ''spike-in probes`` for running the normalization method, as long
+as they satisfy its underlying assumptions (see Subsections \ref{subsec:figs} and
+\ref{subsec:opt}).\\
+
+As a toy example, this approach is applied on the Exiqon raw data from Subsection
+\ref{subsec:exinorm}, which satisfy the two conditions discussed above. You will need to
+set the parameters of the function \verb+read.maimage+ according to your
+particular case (see Chapter 4 of the
+\href{www.bioconductor.org/packages/release/bioc/vignettes/limma/inst/doc/usersguide.pdf}{
+\emph{limma} User's Guide} for more details).\\
+
+First create the \verb+Targets.txt+ file in the \verb+Exiqon+ directory. In our case
+this consists simply in replacing the header line of the file \verb+samplesinfo.txt+ by
+''\verb+FileName+\hspace{0.5 cm}\verb+Cy3+\hspace{0.5 cm}\verb+Cy5+``
+(TAB-separated) and saving the result as \verb+Targets.txt+. Then proceed by 
+reading the raw data and annotating the probe sets using the available GAL file:
+\begin{Sinput}
+R> library(limma)
+R> targets <- readTargets(path='Exiqon')
+R> RGList <- read.maimages(targets[,c('Cy3','Cy5')], source='imagene', path='Exiqon')
+R> RGList$genes <- readGAL(path='Exiqon')
+R> RGList$printer <- getLayout(RGList$genes)	# optional
+\end{Sinput}
+The last line enables plotting the spatial distributions of the intensities of the arrays
+using the \verb+image+ method of the AffyBatch object created below. Running
+\verb+getLayout+ is not always possible (see Section 4.7 of of the
+\href{www.bioconductor.org/packages/release/bioc/vignettes/limma/inst/doc/usersguide.pdf}
+{\emph{limma} User's Guide}) and not needed for the spike-in probe-based normalization.
+The AffyBatch object is created using the function \verb+createAB+ of the \emph{ExiMiR}
+package:
+\footnote{
+\texttt{createAB} stores dual-channel foreground and background intensity data in the same
+way as \texttt{ReadExi}, see footenote \ref{footnote:readexi} in Subsection \ref{subsec:exinorm}.
+}
+\begin{Sinput}
+R> library(ExiMiR)
+R> obatch <- createAB(RGList)
+\end{Sinput}
+Next the ''spike-in probes`` used for normalization must be specified. In our toy example
+they will consist in a subset of the available annotated spike-in probe sets, excluding 
+\verb+spike_control_f+. Other choices are possible, as long as \verb+NormiR+
+can be run (see Subsections \ref{subsec:figs} and \ref{subsec:opt}). The raw
+data normalization is then performed similarly as above (see Subsection
+\ref{subsec:exinorm}):
+\begin{Sinput}
+R> spikein.all <- grep('^spike', featureNames(obatch), value=TRUE)
+R> spikein.subset <- setdiff(spikein.all, 'spike_control_f')
+R> eset.spike <- NormiR(obatch, bg.correct=FALSE,
+                                normalize.method='spikein',
+                                normalize.param=list(probeset.list=spikein.subset),
+                                summary.method='medianpolish')
+\end{Sinput}
+The comments made after the execution of \verb+NormiR+ at the end of the
+previous subsection remain valid in the present case.
+
+
+\subsection{More information about \texttt{NormiR}}
+\label{subsec:normir}
+
+\emph{This paragraph provides additional information about the \texttt{NormiR} function
+and can be skipped on first reading.}\\
+
+The function \verb+NormiR+ has been designed to closely resemble the \verb+expresso+
+function of the \emph{affy} package. Therefore their usages are very similar
+(see Section 3.3.1 of the \emph{affy} 
+\href{http://www.bioconductor.org/packages/release/bioc/vignettes/affy/inst/doc/affy.pdf}
+{vignette}):
+\begin{Sinput}
+ESet <- NormiR(AffyBatch,
+             # background correction
+               bg.correct=TRUE,
+               bgcorrect.method='auto',
+               bgcorrect.param=list(),
+             # normalization
+               normalize=TRUE,
+               normalize.method='spikein',
+               normalize.param=list(),
+             # PM correction (enabled only when MM-values are available)
+               pmcorrect.method='pmonly',
+               pmcorrect.param=list(),
+             # summarization
+               summary.method='medianpolish',
+               summary.param=list(),
+             # miscellaneous
+               verbose=TRUE
+               ...)
+\end{Sinput}
+The methods proposed by \verb+NormiR+ for the first step of background
+correction are provided by the \emph{affy} or \emph{limma} packages,
+depending on whether the input AffyBatch object has been created with
+\verb+ReadAffy+ or \verb+ReadExi+/\verb+createAB+, respectively. The
+\emph{ExiMiR} function \verb+NormiR.bgcorrect.methods+ lists the
+available methods, as for instance in the case of the AffyBatch
+objects defined in Subsections \ref{subsec:affynorm} and
+\ref{subsec:exinorm}:
+\begin{Sinput}
+R> NormiR.bgcorrect.methods(abatch)
+[1] "bg.correct"	"mas"	"none"	"rma"
+R> NormiR.bgcorrect.methods(ebatch)
+[1] "edwards"	"half"	"minimum"	"movingmin" "none" "normexp" ...
+\end{Sinput}
+The \emph{limma} background correction methods requiring background intensity
+values are provided the suitable input data, automatically extracted from the
+AffyBatch object previously created with \verb+ReadExi+/\verb+creatAB+.
+\footnote{
+The way \texttt{ReadExi} and \texttt{creatAB} store dual-channel foreground
+and background intensity data in an AffyBatch object has been described above,
+see Footnote \ref{footnote:readexi}.
+}
+Therefore, applying for instance the \verb+normexp+ background correction on the
+\verb+ebatch+ AffyBatch object is straightforward with \verb+NormiR+:
+\begin{Sinput}
+R> eset.spike <- NormiR(ebatch, bgcorrect.method='normexp'
+			        bgcorrect.param=list(offset=50),
+			        normalize.method='spikein',
+                                summary.method='medianpolish')
+\end{Sinput}
+For the next step of normalization, the methods are independent of the 
+AffyBatch objects and explicitly enumerated by the \emph{ExiMiR} function
+\verb+NormiR.normalize.methods+: 
+\begin{Sinput}
+R> NormiR.normalize.methods()
+[1] "mean"	"median"	"none"	"quantile"	"spikein"
+\end{Sinput}
+As explained above (see Footnote \ref{footnote:rma}), the quantile
+normalization \verb+quantile+ treats separately the two channels
+in case of dual-channel raw data processed by \verb+ReadExi+ or
+\verb+creatAB+. When the spike-in probe-based normalization \verb+spikein+
+is chosen, \verb+NormiR+ automatically detects the spike-in probes,
+based on the Affymetrix or Exiqon annotations. If this detection is not
+successful or if you want to use your own selection of ''spike-in probes``,
+the parameter \verb+probeset.list+
+in \verb+NormiR+ allows to enter the appropriate list of probe set IDs
+(see also Subsection \ref{subsec:opt}). More generally, all the \verb+NormiR+
+parameters enabling fine-tuning of the spike-in probe-based
+normalization \verb+spikein+ are provided as a list with their default
+values by the function \verb+NormiR.spikein.params+. You can modify this
+list and submit it to \verb+NormiR+ using the parameter
+\verb+normalize.param+. 
+\footnote{
+Due to compatibility constraints with older versions of \texttt{NormiR},
+the normalization parameters provided by \texttt{NormiR.spikein.params}
+are also adjustable as explicit \texttt{NormiR} arguments, for instance
+\texttt{NormiR(ebatch, normalize.method='spikein', normalize.param=list(figures.show=FALSE))}
+is equivalent to 
+\texttt{NormiR(ebatch, method='spikein', figures.show=FALSE)}.
+}
+This constitutes the starting point for controlling the execution of \verb+NormiR+
+(see Section \ref{sec:trouble} for details). For instance, using the subset
+of spike-in probes \verb+spikein.subset+ defined in
+Subsection \ref{subsec:othernorm}:
+\begin{Sinput}
+R> NormiR.spikein.params()
+R> spikein.params <- list(probeset.list=spikein.subset,
+			  loess.span=0.6,
+			  force.zero=TRUE)
+R> eset.spike <- NormiR(ebatch, bgcorrect.method='normexp'
+			        bgcorrect.param=list(offset=50),
+			        normalize.method='spikein',
+			        normalize.param=spikein.params,
+                                summary.method='medianpolish')
+\end{Sinput}
+The next step of PM correction is enabled only when the CDF environment
+provides values for the MM probes in the AffyBatch object, which is not
+the case of the Exiqon data considered here.\\
+The last step is the probe summarization, for which \verb+NormiR+ 
+proposes the methods of the \emph{affy} package:
+\begin{Sinput}
+R> NormiR.summary.methods()
+[1] "avgdiff"	"liwong"	"mas"	"medianpolish"	"playerout"
+\end{Sinput}
+Actually, \verb+NormiR+ is a wrapper for three lower-level
+functions, which all accept the corresponding \verb+NormiR+
+parameters. Therefore the previous \verb+NormiR+ command is
+equivalent to:
+\begin{Sinput}
+R> ebatch.tmp <- bg.correct.miR(ebatch, bgcorrect.method='normexp',
+    			                bgcorrect.param=list(offset=50))
+R> ebatch.tmp <- norm.miR(ebatch.tmp, normalize.method='spikein',
+			              normalize.param=spikein.params)
+R> eset.spike <- summarize.miR(ebatch.tmp, summary.method='medianpolish')
+\end{Sinput}
+Separating the normalization steps allows to more efficiently search
+the most appropriate parameters for the spike-in probe-based
+normalization without running the time-consumming summarization step
+at every attempt (see Section \ref{sec:trouble} for details).\\
+
+The low-level summary function \verb+summarize.miR+ can also be run in
+combination with \verb+createAB+ in order to summarize a MAList object
+obtained with a normalization method of the \emph{limma} package
+(see Figure \ref{fig0}). For instance, using the RGList object defined in
+Subsection \ref{subsec:othernorm}:
+\begin{Sinput}
+R> MAList.tmp <- normalizeWithinArrays(RGList, method='loess')
+R> MAList <- normalizeBetweenArrays(MAList.tmp, method='Rquantile')
+R> obatch <- createAB(MAList)
+R> oset.rrma <- summarize.miR(obatch, summary.method='medianpolish')
+\end{Sinput}
+
+
+\section{Troubleshooting and fine-tuning options}
+\label{sec:trouble}
+
+\emph{ExiMiR} provides several functionalities to ensure a safe application of the
+spike-in probe-based normalization. This section first describes the control figures
+generated during the execution of the \verb+NormiR+ function (Subsection
+\ref{subsec:figs}). They allow to identify the problems that may arise when applying
+\emph{ExiMiR}. Subsection \ref{subsec:problems} will help understanding their origin
+and deciding whether to still use \emph{ExiMiR} (with different parameters) or to
+switch to another method like median normalization. The fine-tuning options offered
+by \emph{ExiMiR} are explained in Subsection \ref{subsec:opt}. 
+
+
+\subsection{Control figures}
 \label{subsec:figs}
 
 In order to follow the execution of the spike-in probe-based normalization implemented
 in \texttt{NormiR}, a series of three control figures are generated for each channel of
-the input data. They allow to confirm the successful application of the normlization
+the input data. They allow to confirm the successful application of the normalization
 method but also to detect possible anomalies, that can be then treated with the options
-described in Section \ref{sec:trouble}. This feature runs by default and can be
-deactivated by setting  \verb+figures.show = FALSE+ in \verb+NormiR+.\\
+described in Subsection \ref{subsec:opt}. This feature runs by default and can be
+deactivated by setting  \verb+figures.show=FALSE+ in \verb+NormiR+.\\
 
 The three control figures generated for the Hy3 channel of the Exiqon example from
 Subsections \ref{subsec:exidata} and \ref{subsec:exinorm} are briefly described
@@ -227,7 +520,7 @@ hereafter. For more details see \cite{bibi}.
 \begin{figure}[t]
 \begin{center}
 \fbox{\includegraphics{fig1}}
-\caption{Correction of the spike-in probeset intensities (Hy3 channel)}
+\caption{Correction of the spike-in probe set intensities (Hy3 channel)}
 \label{fig1}
 \end{center}
 \end{figure}
@@ -235,36 +528,36 @@ hereafter. For more details see \cite{bibi}.
 
 \begin{description}
 
-\item[Correction of the spike-in probeset intensities] The four pannels in Figure
+\item[Correction of the spike-in probe set intensities] The four panels in Figure
 \ref{fig1} show the successive steps in removing the array-dependent biases from the
-spike-in probeset intensities. A meaningful application of \verb+NormiR+ indeed
-requires that the spike-in probeset intensities display coherent deviations across the
+spike-in probe set intensities. A meaningful application of \verb+NormiR+ indeed
+requires that the spike-in probe set intensities display coherent deviations across the
 arrays of the experiment. Such a behavior manifests itself by roughly parallel curves
-on the upper-left pannel and by collapsing ones on the upper-right pannel. The
+on the upper-left panel and by collapsing ones on the upper-right panel. The
 normalization correction consists first in subtracting this common variance (lower-left
-pannel) and second in transforming back to the original intensity range (lower-right
-pannel). Correcting the curves is proven efficient when the final ones appear
+panel) and second in transforming back to the original intensity range (lower-right
+panel). Correcting the curves is proved efficient when the final ones appear
 'straighter' than the initial ones. 
 
 \begin{figure}[t]
 \begin{center}
 \fbox{\includegraphics{fig2}}
-\caption{Performance of the spike-in probeset intensity correction (Hy3 channel)}
+\caption{Performance of the spike-in probe set intensity correction (Hy3 channel)}
 \label{fig2}
 \end{center}
 \end{figure}
 
-\item[Performance of the spike-in probeset intensity correction] Figure \ref{fig2}
+\item[Performance of the spike-in probe set intensity correction] Figure \ref{fig2}
 contains two measures for quantitatively assessing the performance of the spike-in
-probeset intensity correction used by \verb+NormiR+. The upper pannel shows a heatmap
+probe set intensity correction used by \verb+NormiR+. The upper panel shows a heatmap
 of the Pearson correlations between the array-dependent raw intensities of the spike-in
-probesets, i.e. between the curves displayed on the upper-left pannel of Figure
+probe sets, i.e. between the curves displayed on the upper-left panel of Figure
 \ref{fig1}. If the values are globally larger than 0.5, then the array-dependent biases
-are sufficiently coherent and applying \verb+NormiR+ is justified. The lower pannel
-displays the variance ratio of the spike-in probesets intensities before and after the
-correction. They correspond to the curves in the upper-left and lower-right pannels of
+are sufficiently coherent and applying \verb+NormiR+ is justified. The lower panel
+displays the variance ratio of the spike-in probe sets intensities before and after the
+correction. They correspond to the curves in the upper-left and lower-right panels of
 Figure \ref{fig1}. If these ratios are sufficiently low, then the \verb+NormiR+
-approach was efficient. 
+approach was effective. 
 
 \begin{figure}[t]
 \begin{center}
@@ -276,26 +569,16 @@ approach was efficient.
 
 \item[Intensity-dependent correction functions for all probes] Figure \ref{fig3}
 displays the intensity and array dependent correction functions that \verb+NormiR+
-applies to all miRNA probes to perform the normalization. It is constucted based on the
+applies to all miRNA probes to perform the normalization. It is constructed based on the
 spike-in probe corrections, already shown on Figures \ref{fig1} and \ref{fig2}. Several
 requirements are necessary to ensure a stable coverage of the whole range of probe
 intensities measured on the array. \emph{ExiMiR} automatically performs checks to
 prevent critical situations where its meaningful application is not guaranteed.
 Sometimes the constructed correction functions do not look good, even if \verb+NormiR+
 ran smoothly. Dealing with such situations is also described in Section
-\ref{sec:trouble} below.
+\ref{subsec:opt} below.
 
 \end{description}  
-
-
-\section{Troubleshooting and fine-tuning options}
-\label{sec:trouble}
-
-This section describes possible problems you may encounter when applying
-\emph{ExiMiR} to your own data, see for instance Subsection \ref{subsec:affynorm}. It
-will help you understanding their origin and deciding whether to still use
-\emph{ExiMiR} (with different parameters) or to choose another normalization
-method like median normalization.  
 
 
 \subsection{Possible problems}
@@ -315,34 +598,34 @@ whether the application of \emph{ExiMiR} was justified or not. Other problems li
 annotation conflicts are also supported by \emph{ExiMiR}. \\
 
 Here is the list of the problematic situations covered by \emph{ExiMiR}, arranged by
-potential order of appearence. 
+potential order of appearance. 
 
 \begin{description} \item[Incompatibility between GAL and TXT files] If the array
 annotation contained in the GAL file is not compatible with the one contained in the
 TXT files, or if there is no GAL file available, then \verb+ReadExi+ directly generates
 a default \verb+galenv+ environment from the annotation contained in the TXT files. 
 
-\item[Insufficient coherence between spike-in probesets] If the raw intensities of the
-spike-in probesets are not sufficiently coherent across the arrays of the experiment,
+\item[Insufficient coherence between spike-in probe sets] If the raw intensities of the
+spike-in probe sets are not sufficiently coherent across the arrays of the experiment,
 i.e. if the mean of the off-diagonal elements of the Pearson correlation matrix shown
-on the upper pannel of Figure \ref{fig2} is smaller than 0.5, then a median
+on the upper panel of Figure \ref{fig2} is smaller than 0.5, then a median
 normalization is applied. The value can be changed by using the \verb+min.corr+ of
 \verb+NormiR+. 
 
 \item[Specificity of the spike-in probeset intensities] If the spike-in probeset
 intensities are not specific, i.e. if the intensity ranges covered by the probes
-mapping to the same probesets are too large, then computing the intensity-dependent
+mapping to the same probe sets are too large, then computing the intensity-dependent
 correction functions from Figure \ref{fig3} becomes problematic. The
 intensity-independent median normalization is preferred in this case. The \verb+NormiR+
-option \verb+max.log2span+ can be changed to allow for probeset intensity ranges larger
+parameter \verb+max.log2span+ can be changed to allow for probeset intensity ranges larger
 than the default value 1.
 
 \item[Insufficient coverage of the probe intensity range] If the range
 [$\sim$6,$\sim$16] of all array probe intensities is not appropriately covered by the
 spike-in probe intensities, then computing the intensity dependence of the correction
-functions from Figure \ref{fig3} becomes unstable. The \verb+NormiR+ option
+functions from Figure \ref{fig3} becomes unstable. The \verb+NormiR+ parameter
 \verb+cover.int+ tests the size of the largest intensity interval between two
-consecutive spikes. Its default value is 1/3. The \verb+NormiR+ option
+consecutive spikes. Its default value is 1/3. The \verb+NormiR+ parameter
 \verb+cover.ext+ tests the minimal ratio between the intensity range covered by the
 spike-in probes and the one covered by all probes on the array. Its default value is
 1/2. These two values can be changed but an eye must be kept on their consequences on
@@ -357,24 +640,35 @@ functions are explained in Subsection \ref{subsec:opt} below.
 
 The results for the spike-in probe-based correction functions displayed on Figure
 \ref{fig3} are not tested automatically by \emph{ExiMiR} and might not be entirely
-satisfactory. This might be due to mutliple reasons, ranging from inhomogeneous
-affinities across the spike-in probesets to an inappropriate coverage of the probe
+satisfactory. This might be due to multiple reasons, ranging from inhomogeneous
+affinities across the spike-in probe sets to an inappropriate coverage of the probe
 intensity range. \emph{ExiMiR} offers the possibility of fine-tuning the
 parameters used by \verb+NormiR+ to improve the stability of the correction
-functions.     
+functions (see also Subsection \ref{subsec:normir} for command line examples).
 
 \begin{description} 
 
+\item[Selection of the spike-in probes] If the control figures show that only a
+subset of the spike-in probe sets displays the appropriate behavior, it can be
+manually selected for the calculation of the correction functions. Set the
+\verb+NormiR+ parameter \verb+probeset.list+ to the list of the appropriate
+spike-in probe sets IDs.
+\footnote{
+Actually \texttt{probeset.list} allows to select any set of probe set IDs and
+tentatively run \texttt{NormiR}. However, the safeguarding strategy implemented
+in \texttt{NormiR} prevents inappropriate choices of ''spike-in probes``. 
+}
+
 \item[Overall LOESS smoothing] If the correction functions 'wiggle' too much, the
-\verb+NormiR+ option \verb+loess.span+ can be set to higher values to better smooth the
-resulting curves. By default, it takes the value 5/(number of spike-in probesets), e.g.
+\verb+NormiR+ parameter \verb+loess.span+ can be set to higher values to better smooth the
+resulting curves. By default, it takes the value 5/(number of spike-in probe sets), e.g.
 5/10 in the Exiqon case. In the extreme cases of values close to 1, the intensity
 dependence of the correction is lost and the results become very similar to a mean or a
 median normalization.  
 
 \item[Low-intensity stabilization] If one correction function change its sign in the
 low intensity range, then an inclusion into the LOESS smoothing of a zero value at the
-intensity minimum will prevent this feature. Set the \verb+NormiR+ option
+intensity minimum will prevent this feature. Set the \verb+NormiR+ parameter
 \verb+force.zero+ to \verb+TRUE+  to activate this functionality. 
 
 \item[High-intensity extrapolation] It often occurs that the largest spike-in probeset
@@ -382,9 +676,9 @@ intensities are lower than the largest probe intensities on the array. In this c
 \verb+NormiR+ needs to include extrapolated values into the LOESS smoothing in order to
 compute the correction functions in the high-intensity range. Fortunately this step is
 quite stable thanks to the fact that high intensity values are less noisy. By default
-\verb+NormiR+ uses the mean of the correction values of two spike-in probesets with the
-largest intensities. The option \verb+extrap.points+ allows to change the number of
-spike-in probesets used in the extrapolation and \verb+extrap.method+ determines the
+\verb+NormiR+ uses the mean of the correction values of two spike-in probe sets with the
+largest intensities. The parameter \verb+extrap.points+ allows to change the number of
+spike-in probe sets used in the extrapolation and \verb+extrap.method+ determines the
 extrapolation method.
 
 \end{description}
@@ -394,42 +688,83 @@ extrapolation method.
 \emph{ExiMiR} provides datasets that allows one to test the functions described in this vignette. The test data are in the \verb+R+ objects obtained as 
 described in Section \ref{sec:data}. They can be used as follows,  which reproduces the commands explained in Section \ref{sec:norm}.
 
-Load the \emph{ExiMiR} package, the GAL environment and the AffyBatch objects corresponding to the data described in Section \ref{subsec:exidata}:
+\subsection{Affymetrix}
+Start by loading the \emph{ExiMiR} package and the AffyBatch object, which includes the appropriate annotation environment and corresponds to the data described in Section \ref{subsec:affydata}:
+<<>>=
+library(ExiMiR)
+data(GSE19183)
+@
+Apply the RMA quantile normalization on the AffyBatch object \verb+GSE19183+ to create the ExpressionSet object \verb+eset.rma+ containing the normalized data:
+<<>>=
+library(affy)
+eset.rma <- expresso(GSE19183, bgcorrect.method='rma',
+			       normalize.method='quantiles',
+			       pmcorrect.method='pmonly',
+			       summary.method='medianpolish')
+
+@
+The spike-in probe-based normalization implemented in \emph{ExiMiR} can be applied similarly:
+<<>>=
+eset.spike <- NormiR(GSE19183, bgcorrect.method='rma',
+			       normalize.method='spikein',
+			       normalize.param=list(figures.show=FALSE),
+			       pmcorrect.method='pmonly',
+			       summary.method='medianpolish')
+@
+As explained at the end of Section \ref{subsec:affynorm}, the spike-in probe-based normalization method implemented in \verb+NormiR+ can not be applied with its default settings.
+Use the \verb+figures.show=TRUE+ option to diagnose graphically the problem (see Section \ref{subsec:figs}). The safeguarding strategies are described in Section \ref{subsec:problems}
+and the \verb+NormiR+ options described in Section \ref{subsec:opt}. Here \verb+NormiR+ cannot be 
+satisfactorily applied to \verb+GSE19183+ because the spike-in probe intensities do not appropriately cover the intensity range of all the array probes.
+
+
+\subsection{Exiqon}
+Load the \emph{ExiMiR} package, the GAL annotation environment and the AffyBatch objects corresponding to the data described in Section \ref{subsec:exidata}:
 <<>>=
 library(ExiMiR)
 data(galenv)
 data(GSE20122)
 @
-Apply the RMA quantile normalization on the AffyBatch object \verb+GSE20122+, using the \verb+rma+ option \verb+background=FALSE+ as recommanded by a recent study\cite{lopez}.
+Apply the RMA quantile normalization on the AffyBatch object \verb+GSE20122+, using the \verb+rma+ option \verb+background=FALSE+ as recommended by a recent study\cite{lopez}.
 This creates the ExpressionSet object \verb+eset.rma+ containing the normalized data:
 <<>>=
-eset.rma <- rma(GSE20122, background=FALSE)
+eset.rma <- NormiR(GSE20122, bg.correct=FALSE,
+			     normalize.method='quantile',
+			     summary.method='medianpolish')
 @
 The spike-in probe-based normalization implemented in \emph{ExiMiR} is applied as follows:
 <<>>=
-eset.spike <- NormiR(GSE20122, figures.show=FALSE)
+eset.spike <- NormiR(GSE20122, bg.correct=FALSE,
+			       normalize.method='spikein',
+			       normalize.param=list(figures.show=FALSE),
+			       summary.method='medianpolish')
 @
 To obtain the same control figures as the ones displayed in Section \ref{subsec:figs}, use the \verb+NormiR+ option \verb+figures.show=TRUE+.
 
 \newpage
 \begin{thebibliography}{2}
+
 \bibitem{bibi}
 Sewer A et \textit{al}., to be published.
 
 \bibitem{sarkar}
 Sarkar D et \textit{al}., Quality assessment and data analysis for miRNA expression
-arrays, Nucleic Acids Res. 2009 Feb;37(2):e17.
+arrays, Nucleic Acids Research 2009, \textbf{37}(2).
+
+\bibitem{RMA}
+Irizarry RA et \textit{al}., Biostatistics 2003, \textbf{4}(2).
 
 \bibitem{lopez}
 L\'{o}pez-Romero P et \textit{al}., Procession of Agilent microRNA array data,
 BMC Research Notes 2010, \textbf{3}:18.
+
+
 \end{thebibliography}
 
 
 
 \newpage
 \appendix{}
-\section{Content of the file ''sampleinfo.txt''}
+\section{Content of the file ''samplesinfo.txt''}
 \label{sec:app}
 \scriptsize{
 \begin{Sinput}

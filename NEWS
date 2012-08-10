@@ -1,3 +1,12 @@
+1.99.0  Sylvain Gubian  <DL.RSupport@pmi.com>
+         * inst/doc/fig0.png: new figure
+         * man/bg.correct.miR.Rd: new help file
+         * man/createAB.Rd: new help file
+         * man/NormiR.methods.Rd: new help file
+         * R/createAB.R: new feature implementation
+         * R/NormiR.methods: new file for giving availables methods
+         * All the others files have been updated according new features implementation
+
 1.3.1  Sylvain Gubian  <DL.RSupport@pmi.com>
         * NEWS: add NEWS file for tracking changes.
         * inst/doc/ExiMiR-vignette.Rnw: Fix vignette generation issue
