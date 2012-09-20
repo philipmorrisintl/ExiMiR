@@ -1,5 +1,3 @@
-import(affy)
-import(limma)
 export("ReadExi")
 export("createAB")
 export("NormiR")
