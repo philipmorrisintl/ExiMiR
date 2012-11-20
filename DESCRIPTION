@@ -1,8 +1,8 @@
 Package: ExiMiR
 Type: Package
 Title: R functions for the normalization of Exiqon miRNA array data
-Version: 2.1.0
-Date: 2012-09-20
+Version: 2.1.1
+Date: 2012-11-06
 Author: Sylvain Gubian <DL.RSupport@pmi.com>, Alain Sewer <DL.RSupport@pmi.com>, PMP SA
 Maintainer: Sylvain Gubian <DL.RSupport@pmi.com>
 Depends: R (>= 2.10), Biobase (>= 2.5.5), affy (>= 1.26.1), limma

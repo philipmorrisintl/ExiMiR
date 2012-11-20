@@ -96,13 +96,19 @@ createAB <- function(object,
 	dots <- list(...)
 	
 	if (is.dual) {
-		evens <- filenames[seq(from=2, to=length(filenames),by=2)]
-		odds <- filenames[seq(from=1, to=length(filenames),by=2)]
-		colnames(obj$G) <- odds
-		colnames(obj$R) <- evens
-		if (has.bg) {
-			colnames(obj$Gb) <- odds
-			colnames(obj$Rb) <- evens
+		if (obj$source == 'imagene' || obj$source == 'exiqon') {
+			evens <- filenames[seq(from=2, to=length(filenames),by=2)]
+			odds <- filenames[seq(from=1, to=length(filenames),by=2)]
+			colnames(obj$G) <- odds
+			colnames(obj$R) <- evens
+			if (has.bg) {
+				colnames(obj$Gb) <- odds
+				colnames(obj$Rb) <- evens
+			}
+		}
+		else {
+			colnames(obj$G) <- filenames
+			colnames(obj$R) <- filenames
 		}
 	}
 	
@@ -189,7 +195,7 @@ createAB <- function(object,
 		perm.list <- NULL
 	} else {
 		perm.list <- list()
-		if (gal.read) {
+		if (gal.read | (obj$source != 'exiqon' & obj$source !='imagene')) {
 			# Can use printer
 			perm.list$block.row <- obj$printer$ngrid.r
 			perm.list$block.col <- obj$printer$ngrid.c
@@ -213,33 +219,64 @@ createAB <- function(object,
 	
 	# Create Affybacth matrix for permutation
 	if (!is.null(perm.list)) {
-		m.temp <- matrix(NA, max(perm.list$rindex), max(perm.list$cindex))
-		mbg.temp <- matrix(NA, max(perm.list$rindex), max(perm.list$cindex))
-		signal <- matrix(NA, length(ROWS), length(filenames))
-		bg <- matrix(NA, length(ROWS), length(filenames))
+		file.rep = FALSE
+		if (obj$source != 'imagene' & obj$source != 'exiqon') {
+			file.rep = TRUE
+			mR.temp <- matrix(NA, max(perm.list$rindex), max(perm.list$cindex))
+			mG.temp <- matrix(NA, max(perm.list$rindex), max(perm.list$cindex))
+			mbgR.temp <- matrix(NA, max(perm.list$rindex), max(perm.list$cindex))
+			mbgG.temp <- matrix(NA, max(perm.list$rindex), max(perm.list$cindex))
+			signal <- matrix(NA, length(ROWS), length(filenames)*2)
+			bg <- matrix(NA, length(ROWS), length(filenames)*2)
+		} else {
+			m.temp <- matrix(NA, max(perm.list$rindex), max(perm.list$cindex))
+			mbg.temp <- matrix(NA, max(perm.list$rindex), max(perm.list$cindex))
+			signal <- matrix(NA, length(ROWS), length(filenames))
+			bg <- matrix(NA, length(ROWS), length(filenames))
+		}
+		
+		
 		for(i in 1:length(filenames)) {
 			for(j in 1:length(ROWS)) {
 				if (is.dual) {
-					if (i <= length(filenames)/2) {
-						if (ref.channel=="G")
-							m.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$G[j,i]
-						else
-							m.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$R[j,i]
-						if (has.bg)
+					if (!file.rep) {
+						if (i <= length(filenames)/2) {
 							if (ref.channel=="G")
-								mbg.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$Gb[j,i]
+								m.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$G[j,i]
 							else
-								mbg.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$Rb[j,i]
-					} else {
-						if (ref.channel=="G")
-							m.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$R[j,i-length(filenames)/2]
-						else
-							m.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$G[j,i-length(filenames)/2]
-						if (has.bg)
+								m.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$R[j,i]
+							if (has.bg)
+								if (ref.channel=="G")
+									mbg.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$Gb[j,i]
+								else
+									mbg.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$Rb[j,i]
+						} else {
 							if (ref.channel=="G")
-								mbg.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$Rb[j,i-length(filenames)/2]
+								m.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$R[j,i-length(filenames)/2]
 							else
-								mbg.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$Gb[j,i-length(filenames)/2]
+								m.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$G[j,i-length(filenames)/2]
+							if (has.bg)
+								if (ref.channel=="G")
+									mbg.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$Rb[j,i-length(filenames)/2]
+								else
+									mbg.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$Gb[j,i-length(filenames)/2]
+						}
+					} else { # NON AGILENT/EXIQON
+						if (ref.channel=="G") {
+							mG.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$G[j,i]
+							mR.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$R[j,i]
+						} else {
+							mG.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$R[j,i]
+							mR.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$G[j,i]
+						}
+						if (has.bg)
+							if (ref.channel=="G") {
+								mbgG.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$Gb[j,i]
+								mbgR.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$Rb[j,i]
+							} else {
+								mbgG.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$Rb[j,i]
+								mbgR.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$Gb[j,i]
+							}
 					}
 				} else {
 					m.temp[perm.list$rindex[j],perm.list$cindex[j]] <- obj$E[j,i]
@@ -248,12 +285,26 @@ createAB <- function(object,
 				}
 			}
 			#m.temp <- m.temp[,rev(1:max(perm.env$cindex))]
-			m.temp <- m.temp[,(1:max(perm.list$cindex))]
-			if (has.bg)
-				mbg.temp <- mbg.temp[,(1:max(perm.list$cindex))]
-			signal[,i] <- as.vector(m.temp)
-			if (has.bg)
-				bg[,i] <- as.vector(mbg.temp)
+			if (file.rep) {
+				mbgG.temp <- mbgG.temp[,(1:max(perm.list$cindex))]
+				mbgR.temp <- mbgR.temp[,(1:max(perm.list$cindex))]
+				signal[,i] <- as.vector(mG.temp)
+				signal[,i+length(filenames)] <- as.vector(mR.temp)
+			} else {
+				m.temp <- m.temp[,(1:max(perm.list$cindex))]
+				signal[,i] <- as.vector(m.temp)
+			}
+			if (has.bg) {
+				if (file.rep) {
+					mbgR.temp <- mbgR.temp[,(1:max(perm.list$cindex))]
+					mbgG.temp <- mbgG.temp[,(1:max(perm.list$cindex))]
+					bg[,i] <- as.vector(mbgG.temp)
+					bg[,i+length(filenames)/2] <- as.vector(mbgR.temp)
+				} else {
+					mbg.temp <- mbg.temp[,(1:max(perm.list$cindex))]
+					bg[,i] <- as.vector(mbg.temp)
+				}
+			}	
 		}
 	} else {
 		if (has.bg)
@@ -315,8 +366,19 @@ createAB <- function(object,
 	}
 	
 	if (is.dual) {
-		pdata <- data.frame(sample=1:length(filenames), row.names=c(filenames[seq(from=1,
+		if (file.rep) {
+			fnG <- paste(filenames,'_G', sep='')
+			fnR <- paste(filenames,'_R', sep='')
+			if (ref.channel=="G") {
+				filenames <- c(fnG, fnR)
+			} else {
+				filenames <- c(fnR, fnG)
+			}
+			pdata <- data.frame(sample=1:length(filenames), row.names=filenames)
+		} else {
+			pdata <- data.frame(sample=1:length(filenames), row.names=c(filenames[seq(from=1,
 										to=length(filenames),by=2)],filenames[seq(from=2, to=length(filenames),by=2)]))
+		}
 	} else {
 		pdata <- data.frame(sample=1:length(filenames), row.names=filenames)
 	}
@@ -364,6 +426,17 @@ createAB <- function(object,
 				phenoData = phenoData,
 				nrow = nrow(m.temp),
 				ncol = ncol(m.temp),
+				annotation = galname,
+				protocolData = protocolData,
+				experimentData = experimentData)
+	} else if (obj$source == 'genepix') {
+		ab <- new("AffyBatch",
+				exprs =signal,
+				se.exprs = bg,
+				cdfName = galname,
+				phenoData = phenoData,
+				nrow = nrow(mG.temp),
+				ncol = ncol(mR.temp),
 				annotation = galname,
 				protocolData = protocolData,
 				experimentData = experimentData)

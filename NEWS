@@ -1,3 +1,7 @@
+2.0.1	Sylvain Gubian  <DL.RSupport@pmi.com>
+		* R/createAB.R: Adding support for non imagene data type read by limma
+		* R/NormiR.R: Fix median/mean normalization issue
+
 1.99.1  Sylvain Gubian  <DL.RSupport@pmi.com>
 		* NAMESPACE: removing the load of limma and affy that are in dependencies
 

@@ -253,9 +253,6 @@ norm.miR <- function(abatch, normalize.method ="spikein", normalize.param = list
 				m <- spikeinnorm(object=abatch, spike.list=spike.list, control.params=control.params, verbose=verbose, channel = 0)
 			}
 		}
-		ab <- abatch
-		exprs(ab) <- m
-		return(ab)
 	} else {
 		if (is.from.createAB(abatch)) {
 			if (!normalize.method%in%c("quantile","median","mean")) {
@@ -273,10 +270,9 @@ norm.miR <- function(abatch, normalize.method ="spikein", normalize.param = list
 					#lim.MA <- normalizeWithinArrays(object = lim.obj, method = "loess")
 					#lim.obj$R <- normalizeQuantiles(lim.MA$A + lim.MA$M/2)
 					#lim.obj$G <- normalizeQuantiles(lim.MA$A - lim.MA$M/2)
-					lim.obj$R <- normalizeQuantiles(lim.obj$R)
-					lim.obj$G <- normalizeQuantiles(lim.obj$G)
-					abatch.normalized <- abatch
-					exprs(abatch.normalized) <- cbind(lim.obj$G, lim.obj$R)		
+					lim.obj$R <- 2 ^ normalizeQuantiles(log2(lim.obj$R))
+					lim.obj$G <- 2 ^ normalizeQuantiles(log2(lim.obj$G))
+					m <- cbind(lim.obj$G, lim.obj$R)		
 				} else {
 					# Single channel
 					lim.obj <- new("EListRaw")
@@ -285,27 +281,27 @@ norm.miR <- function(abatch, normalize.method ="spikein", normalize.param = list
 #				if (has.bg(abatch)) {
 #					lim.obj$Eb <- se.exprs(abatch)[,1:(ncol(exprs(abatch)))]
 #				}
-					lim.obj$E <- normalizeQuantiles(lim.obj$E)
-					abatch.normalized <- abatch
-					exprs(abatch.normalized) <- lim.obj$E
+					m <- 2 ^ normalizeQuantiles(log2(lim.obj$E))
 				}
 			} else {
 				if (normalize.method=="median") {
-					abatch.normalized <- mediannorm(abatch)
+					m <- mediannorm(abatch)
+					
 				} else if (normalize.method=="mean") {
-					abatch.normalized <- meannorm(abatch)
+					m <- meannorm(abatch)
 				}
 			}
-			return(abatch.normalized)
 		} else {
 #			if (!normalize.method%in%normalize.AffyBatch.methods()) {
 #				stop("Method not supported for the AffyBatch object provided")
 #			}
 			# The abatch comes from Affy pipeline
-			abatch.normalized <- normalize(abatch, method="quantiles")
-			return(abatch.normalized)
+			m <- exprs(normalize(abatch, method="quantiles"))
 		}
 	}
+	ab <- abatch
+	exprs(ab) <- m
+	return(ab)
 }
 
 
@@ -316,22 +312,24 @@ spikeinnorm <- function(	object,
 		verbose=TRUE) {
 	# Spike-in method implementation selects only spikes in the matrix
 	galenv <- getCdfInfo(object)
+	
+	# log2 should not be done because it is done when calling background correction even if option = FALSE
 	M <- log2(exprs(object))
 	
 	if (channel==0) {
 		sample.start <- 1;
 		sample.end <- length(sampleNames(object))
-		channel <- "1"
+		channel.name <- "1"
 	}
 	else if (channel==1) {
 		sample.start <- 1;
 		sample.end <- length(sampleNames(object)) / 2
-		channel <- "Green"
+		channel.name <- "Green"
 	}
 	else if (channel==2) {
 		sample.start <- length(sampleNames(object)) / 2 + 1;
 		sample.end <- length(sampleNames(object))
-		channel <- "Red"
+		channel.name <- "Red"
 	}
 	
 	nbsamples <- (sample.end - sample.start) + 1
@@ -370,7 +368,7 @@ spikeinnorm <- function(	object,
 			message("Not enough common variance to guarantee good performance of spike-in normalization (", mean.display, " < ", control.params$min.corr, ").\nUsing median normalization...")
 		}
 		# Call mediannorm
-		return(mediannorm(object))
+		return(mediannorm(object,channel=channel))
 	}
 	
 	# Checking specificity of spike intensity
@@ -385,7 +383,7 @@ spikeinnorm <- function(	object,
 			message("The intensity resolution of the spike-in probe sets is too coarse (",  v.observed, " > ", v.max, ") to guarantee a good performance of spike-in normalization\nUsing median normalization...")
 		}
 		# Call mediannorm
-		return(mediannorm(object))
+		return(mediannorm(object, channel=channel))
 	}
 	
 	# Checking external coverage
@@ -399,7 +397,7 @@ spikeinnorm <- function(	object,
 			message("The ratio between the intensity range covered by the spike-in probes and the one covered by all probes on the array is too low (",  ve.display, " < ", control.params$cover.ext, ").\nUsing median normalization...")
 		}
 		# Call mediannorm
-		return(mediannorm(object))
+		return(mediannorm(object,channel=channel))
 	}
 	
 	# Checking internal coverage
@@ -413,7 +411,7 @@ spikeinnorm <- function(	object,
 			message("The size of the largest intensity interval between two consecutive spikes is too large (",  vi.display, " > ", control.params$cover.int, ").\nUsing median normalization...")
 		}
 		# Call mediannorm
-		return(mediannorm(object))
+		return(mediannorm(object,channel=channel))
 	}
 	
 	# Use shorts names for spikes control
@@ -467,11 +465,11 @@ spikeinnorm <- function(	object,
 	
 	if (control.params$figures.show) {
 		ordered <- order(mss[,1])
-		txt <- paste("Fig.1: Correction of spike-in probe set intensities (", channel, " channel)", sep="")
+		txt <- paste("Fig.1: Correction of spike-in probe set intensities (", channel.name, " channel)", sep="")
 		if (control.params$figures.output=="display") {
 			dev.new(title=txt)
 		} else {
-			filename <- paste("Spike-in_Probe_sets_Intensity_Correction_", channel, "_channel.pdf", sep="")
+			filename <- paste("Spike-in_Probe_sets_Intensity_Correction_", channel.name, "_channel.pdf", sep="")
 			pdf(file=filename, title=txt)
 		}
 		
@@ -557,11 +555,11 @@ spikeinnorm <- function(	object,
 		layout(1)
 		if (!dev.interactive()) dev.off()
 		
-		txt <- paste("Fig.2: Performance of the spike-in probe set intensity correction (", channel, " channel)", sep="")
+		txt <- paste("Fig.2: Performance of the spike-in probe set intensity correction (", channel.name, " channel)", sep="")
 		if (control.params$figures.output=="display") {
 			dev.new(title=txt)
 		} else {
-			filename <- paste("Performance_of_the_spike-in_probe_set_intensity_correction_", channel, "_channel.pdf", sep="")
+			filename <- paste("Performance_of_the_spike-in_probe_set_intensity_correction_", channel.name, "_channel.pdf", sep="")
 			pdf(file=filename, title=txt)
 		}
 		figure2 <- dev.cur()
@@ -638,7 +636,7 @@ spikeinnorm <- function(	object,
 		#	if (verbose) {
 		#		message("The number of points that have to be extrapoled is too high to perform spike-in normalization.\nUsing median normalization...")
 		#	}
-		#	return(mediannorm(object))
+		#	return(mediannorm(object,channel=channel))
 		#}
 		
 		lenx <- length(x)
@@ -697,7 +695,7 @@ spikeinnorm <- function(	object,
 	}
 	
 	if (control.params$figures.show) {
-		by.samples.figures(points.all, channel,figures.output=control.params$figures.output)
+		by.samples.figures(points.all, channel.name,figures.output=control.params$figures.output)
 	}
 	
 	Mout <- M[,(sample.start):(sample.end)] + dM
@@ -778,25 +776,43 @@ by.samples.legend <- function(sample.from, sample.to) {
 	legend(x=-0.5, y=nbsamples+2, "Array labels", bty="n", cex=0.7)
 }
 
-meannorm <- function(object) {
-	ab <- object
+meannorm <- function(object, channel=0) {
+	if (channel==0) {
+		m <- exprs(object)
+	} else if (channel==1) {
+		m <- exprs(object)[,1:length(sampleNames(object)) / 2]
+	} else {
+		m <- exprs(object)[,(length(sampleNames(object)) / 2 + 1):(length(sampleNames(object)))]
+	}
 	m <- exprs(object)
 	m <- log2(m)
-	m <- m - colMeans(m)
+	cm <- colMeans(m)
+	m2 <- m
+	for(i in 1:nrow(m)) {
+		m2[i,] <- m2[i,] - cm
+	}
 	m <- m - min(m)
 	m <- 2 ^ m
-	exprs(ab) <- m
-	return(ab)
+	return(m)
 }
 
-mediannorm <- function(object) {
-	ab <- object
-	m <- exprs(object)
+
+mediannorm <- function(object, channel=0) {
+	if (channel==0) {
+		m <- exprs(object)
+	} else if (channel==1) {
+		m <- exprs(object)[,1:(length(sampleNames(object)) / 2)]
+	} else {
+		m <- exprs(object)[,(length(sampleNames(object)) / 2 + 1):(length(sampleNames(object)))]
+	}
 	m <- log2(m)
-	m <- m - apply(m, 2, median)
+	md <- apply(m, 2, median)
+	m2 <- m
+	for(i in 1:nrow(m)) {
+		m2[i,] <- m2[i,] - md
+	}
 	m <- m - min(m)
 	m <- 2 ^ m
-	exprs(ab) <- m
 	return(m)
 }
 
