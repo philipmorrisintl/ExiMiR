@@ -1,14 +1,21 @@
 Package: ExiMiR
 Type: Package
 Title: R functions for the normalization of Exiqon miRNA array data
-Version: 2.5.1
+Version: 2.5.2
 Date: 2012-11-06
-Author: Sylvain Gubian <DL.RSupport@pmi.com>, Alain Sewer <DL.RSupport@pmi.com>, PMP SA
+Author: Sylvain Gubian <DL.RSupport@pmi.com>, Alain Sewer
+        <DL.RSupport@pmi.com>, PMP SA
 Maintainer: Sylvain Gubian <DL.RSupport@pmi.com>
 Depends: R (>= 2.10), Biobase (>= 2.5.5), affy (>= 1.26.1), limma
-Imports: affyio(>= 1.13.3), Biobase(>= 2.5.5), preprocessCore(>= 1.10.0)
-Description: This package contains functions for reading raw data in ImaGene TXT format obtained from Exiqon miRCURY LNA arrays, annotating them with appropriate GAL files, and normalizing them using a spike-in probe-based method. Other platforms and data formats are also supported.
+Imports: affyio(>= 1.13.3), Biobase(>= 2.5.5), preprocessCore(>=
+        1.10.0)
+Description: This package contains functions for reading raw data in
+        ImaGene TXT format obtained from Exiqon miRCURY LNA arrays,
+        annotating them with appropriate GAL files, and normalizing
+        them using a spike-in probe-based method. Other platforms and
+        data formats are also supported.
 License: GPL-2
 Collate: make.gal.env.R read.exi.R createAB.R NormiR.R NormiR.methods.R
-biocViews: Microarray, OneChannel, DualChannel, Preprocessing, GeneExpression, Transcription
 LazyLoad: yes
+biocViews: Microarray, OneChannel, TwoChannel, Preprocessing,
+        GeneExpression, Transcription
