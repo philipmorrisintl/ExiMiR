@@ -118,7 +118,7 @@ connect to the Bioconductor server (\href{http://www.bioconductor.org/}{http://w
 will be generated automatically by the \emph{affy} package when reading the CEL files
 (see Subsection \ref{subsec:affynorm}). If this is not the case, you need to get and
 load the package
-\href{http://bioconductor.org/packages/mirna10cdf.html}
+\href{http://bioconductor.org/packages/mirna10cdf/}
 {\emph{mirna10cdf}}, which will create the appropriate annotation environment for
 the dataset GSE19183 in your \verb+R+ session.
 
