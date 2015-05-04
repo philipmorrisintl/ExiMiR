@@ -8,8 +8,8 @@ Author: Sylvain Gubian <DL.RSupport@pmi.com>, Alain Sewer
 Maintainer: Sylvain Gubian <DL.RSupport@pmi.com>
 Depends: R (>= 2.10), Biobase (>= 2.5.5), affy (>= 1.26.1), limma
 Imports: affyio(>= 1.13.3), Biobase(>= 2.5.5), preprocessCore(>=
-Suggests: mirna10cdf
         1.10.0)
+Suggests: mirna10cdf
 Description: This package contains functions for reading raw data in
         ImaGene TXT format obtained from Exiqon miRCURY LNA arrays,
         annotating them with appropriate GAL files, and normalizing
